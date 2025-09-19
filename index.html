@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Caja de Pedidos y Gastos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00e676;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    nav button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    nav button:hover {
+      transform: scale(1.05);
+      background: #1de9b6;
+    }
+    .section {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
+    .totales {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .totales div {
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: #333;
+      box-shadow: 0px 2px 8px rgba(0,0,0,0.6);
+    }
+    form {
+      background: #333;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+    }
+    form input, form textarea, form button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    form input, form textarea {
+      background: #444;
+      color: #fff;
+    }
+    form button {
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    form button:hover {
+      transform: scale(1.05);
+      background: #1de9b6;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0px 2px 8px rgba(0,0,0,0.5);
+    }
+    table th, table td {
+      padding: 12px;
+      border-bottom: 1px solid #444;
+      text-align: center;
+    }
+    table th {
+      background: #00e676;
+      color: #000;
+    }
+    .pagado {
+      opacity: 0.5;
+    }
+    .acciones {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: scale(1.1);
+    }
+    .btn-pagar {
+      background: #ffc107;
+      color: #000;
+    }
+    .btn-pagar:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+    .btn-eliminar {
+      background: #ff5252;
+      color: #fff;
+    }
+    .descargar-btn {
+      background: #1e88e5;
+      color: #fff;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📦 Caja de Pedidos y Gastos</h1>
+
+  <nav>
+    <button onclick="mostrarSeccion('pedidos')">➕ Ingresar Pedido</button>
+    <button onclick="mostrarSeccion('verPedidos')">📋 Ver Pedidos</button>
+    <button onclick="mostrarSeccion('gastos')">💲 Gastos</button>
+  </nav>
+
+  <!-- Sección Pedidos -->
+  <div id="pedidos" class="section active">
+    <form id="pedidoForm">
+      <input type="text" id="cliente" placeholder="Nombre del cliente" required>
+      <input type="text" id="producto" placeholder="Producto" required>
+      <input type="number" id="cantidad" placeholder="Cantidad" min="1" required>
+      <input type="number" id="precio" placeholder="Precio de venta" min="0" step="0.01" required>
+      <textarea id="observaciones" placeholder="Observaciones"></textarea>
+      <button type="submit">➕ Agregar Pedido</button>
+    </form>
+  </div>
+
+  <!-- Sección Ver Pedidos -->
+  <div id="verPedidos" class="section">
+    <div class="totales">
+      <div>💰 Pagado: <span id="totalPagado">0</span></div>
+      <div>💸 Pendiente: <span id="totalPendiente">0</span></div>
+    </div>
+    <button class="btn descargar-btn" onclick="descargarExcel()">⬇ Descargar Excel</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Total</th>
+          <th>Observaciones</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="listaPedidos"></tbody>
+    </table>
+  </div>
+
+  <!-- Sección Gastos -->
+  <div id="gastos" class="section">
+    <form id="gastoForm">
+      <input type="text" id="concepto" placeholder="Concepto del gasto" required>
+      <input type="number" id="monto" placeholder="Monto" min="0" step="0.01" required>
+      <button type="submit">➕ Agregar Gasto</button>
+    </form>
+    <div class="totales">
+      <div>💲 Total Gastado: <span id="totalGastado">0</span></div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="listaGastos"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // Tabs
+    function mostrarSeccion(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Pedidos
+    const form = document.getElementById("pedidoForm");
+    const lista = document.getElementById("listaPedidos");
+    const totalPagadoEl = document.getElementById("totalPagado");
+    const totalPendienteEl = document.getElementById("totalPendiente");
+
+    let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+    let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+
+    function renderPedidos() {
+      lista.innerHTML = "";
+      let totalPagado = 0;
+      let totalPendiente = 0;
+
+      pedidos.forEach((p, index) => {
+        const fila = document.createElement("tr");
+        if (p.pagado) fila.classList.add("pagado");
+
+        fila.innerHTML = `
+          <td>${p.cliente}</td>
+          <td>${p.producto}</td>
+          <td>${p.cantidad}</td>
+          <td>$${(p.precio * p.cantidad).toFixed(2)}</td>
+          <td>${p.observaciones}</td>
+          <td>${p.fecha}</td>
+          <td>
+            <div class="acciones">
+              <button class="btn btn-pagar" ${p.pagado ? "disabled" : ""} onclick="marcarPagado(${index})">
+                ${p.pagado ? "✔ Pagado" : "💵 Pagar"}
+              </button>
+              <button class="btn btn-eliminar" onclick="eliminarPedido(${index})">❌ Eliminar</button>
+            </div>
+          </td>
+        `;
+        lista.appendChild(fila);
+
+        if (p.pagado) {
+          totalPagado += p.precio * p.cantidad;
+        } else {
+          totalPendiente += p.precio * p.cantidad;
+        }
+      });
+
+      totalPagadoEl.textContent = `$${totalPagado.toFixed(2)}`;
+      totalPendienteEl.textContent = `$${totalPendiente.toFixed(2)}`;
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const nuevoPedido = {
+        cliente: document.getElementById("cliente").value,
+        producto: document.getElementById("producto").value,
+        cantidad: parseInt(document.getElementById("cantidad").value),
+        precio: parseFloat(document.getElementById("precio").value),
+        observaciones: document.getElementById("observaciones").value,
+        fecha: new Date().toLocaleString(),
+        pagado: false
+      };
+      pedidos.push(nuevoPedido);
+      localStorage.setItem("pedidos", JSON.stringify(pedidos));
+      renderPedidos();
+      form.reset();
+      mostrarSeccion("verPedidos");
+    });
+
+    function marcarPagado(index) {
+      pedidos[index].pagado = true;
+      localStorage.setItem("pedidos", JSON.stringify(pedidos));
+      renderPedidos();
+    }
+
+    function eliminarPedido(index) {
+      pedidos.splice(index, 1);
+      localStorage.setItem("pedidos", JSON.stringify(pedidos));
+      renderPedidos();
+    }
+
+    // Gastos
+    const gastoForm = document.getElementById("gastoForm");
+    const listaGastos = document.getElementById("listaGastos");
+    const totalGastadoEl = document.getElementById("totalGastado");
+
+    function renderGastos() {
+      listaGastos.innerHTML = "";
+      let totalGastado = 0;
+
+      gastos.forEach((g, index) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${g.concepto}</td>
+          <td>$${g.monto.toFixed(2)}</td>
+          <td>${g.fecha}</td>
+          <td>
+            <button class="btn btn-eliminar" onclick="eliminarGasto(${index})">❌ Eliminar</button>
+          </td>
+        `;
+        listaGastos.appendChild(fila);
+        totalGastado += g.monto;
+      });
+
+      totalGastadoEl.textContent = `$${totalGastado.toFixed(2)}`;
+    }
+
+    gastoForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const nuevoGasto = {
+        concepto: document.getElementById("concepto").value,
+        monto: parseFloat(document.getElementById("monto").value),
+        fecha: new Date().toLocaleString()
+      };
+      gastos.push(nuevoGasto);
+      localStorage.setItem("gastos", JSON.stringify(gastos));
+      renderGastos();
+      gastoForm.reset();
+    });
+
+    function eliminarGasto(index) {
+      gastos.splice(index, 1);
+      localStorage.setItem("gastos", JSON.stringify(gastos));
+      renderGastos();
+    }
+
+    // Descargar Excel
+    function descargarExcel() {
+      let csv = "Cliente,Producto,Cantidad,Total,Observaciones,Fecha,Estado\n";
+      pedidos.forEach(p => {
+        csv += `${p.cliente},${p.producto},${p.cantidad},${(p.precio * p.cantidad).toFixed(2)},${p.observaciones},${p.fecha},${p.pagado ? "Pagado" : "Pendiente"}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.setAttribute("href", url);
+      a.setAttribute("download", "pedidos.csv");
+      a.click();
+    }
+
+    // Inicializar
+    renderPedidos();
+    renderGastos();
+  </script>
+</body>
+</html>
