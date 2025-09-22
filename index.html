@@ -166,7 +166,8 @@
       <div>💸 Pendiente: <span id="totalPendiente">0</span></div>
       <div>🤑 Ganancia: <span id="ganancia">0</span></div>
     </div>
-    <button class="btn descargar-btn" onclick="descargarExcelPedidos()">⬇ Descargar Pedidos</button>
+    <!-- Botón unificado para descargar todo -->
+    <button class="btn descargar-btn" onclick="descargarTodoExcel()">⬇ Descargar Pedidos y Gastos</button>
     <table>
       <thead>
         <tr>
@@ -176,7 +177,7 @@
           <th>Total</th>
           <th>Observaciones</th>
           <th>Fecha</th>
-          <th>Acciones</th>
+          <th>Estado</th>
         </tr>
       </thead>
       <tbody id="listaPedidos"></tbody>
@@ -195,8 +196,6 @@
       <div>💲 Total Gastado: <span id="totalGastado">0</span></div>
     </div>
 
-    <button class="btn descargar-btn" onclick="descargarExcelGastos()">⬇ Descargar Gastos</button>
-
     <table>
       <thead>
         <tr>
@@ -210,6 +209,9 @@
     </table>
   </div>
 
+  <!-- Librería SheetJS para generar XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <script>
     // Pestañas
     function mostrarSeccion(id) {
@@ -217,12 +219,17 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // Pedidos
+    // Elementos pedidos
     const form = document.getElementById("pedidoForm");
     const lista = document.getElementById("listaPedidos");
     const totalPagadoEl = document.getElementById("totalPagado");
     const totalPendienteEl = document.getElementById("totalPendiente");
     const gananciaEl = document.getElementById("ganancia");
+
+    // Elementos gastos
+    const gastoForm = document.getElementById("gastoForm");
+    const listaGastos = document.getElementById("listaGastos");
+    const totalGastadoEl = document.getElementById("totalGastado");
 
     let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
     let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
@@ -231,11 +238,9 @@
       lista.innerHTML = "";
       let totalPagado = 0;
       let totalPendiente = 0;
-
       pedidos.forEach((p, index) => {
         const fila = document.createElement("tr");
         if (p.pagado) fila.classList.add("pagado");
-
         fila.innerHTML = `
           <td>${p.cliente}</td>
           <td>${p.producto}</td>
@@ -243,27 +248,18 @@
           <td>$${(p.precio * p.cantidad).toFixed(2)}</td>
           <td>${p.observaciones}</td>
           <td>${p.fecha}</td>
-          <td>
-            <div class="acciones">
-              <button class="btn btn-pagar" ${p.pagado ? "disabled" : ""} onclick="marcarPagado(${index})">
-                ${p.pagado ? "✔ Pagado" : "💵 Pagar"}
-              </button>
-              <button class="btn btn-eliminar" onclick="eliminarPedido(${index})">❌ Eliminar</button>
-            </div>
-          </td>
+          <td>${p.pagado ? "Pagado" : "Pendiente"}</td>
         `;
         lista.appendChild(fila);
-
         if (p.pagado) totalPagado += p.precio * p.cantidad;
         else totalPendiente += p.precio * p.cantidad;
       });
-
       totalPagadoEl.textContent = `$${totalPagado.toFixed(2)}`;
       totalPendienteEl.textContent = `$${totalPendiente.toFixed(2)}`;
 
-      // Ganancia = totalPagado - totalGastado
       const totalGastado = gastos.reduce((sum, g) => sum + g.monto, 0);
-      gananciaEl.textContent = `$${(totalPagado - totalGastado).toFixed(2)}`;
+      const ganancia = totalPagado - totalGastado;
+      gananciaEl.textContent = `$${ganancia.toFixed(2)}`;
     }
 
     form.addEventListener("submit", e => {
@@ -296,32 +292,22 @@
       renderPedidos();
     }
 
-    // Gastos
-    const gastoForm = document.getElementById("gastoForm");
-    const listaGastos = document.getElementById("listaGastos");
-    const totalGastadoEl = document.getElementById("totalGastado");
-
     function renderGastos() {
       listaGastos.innerHTML = "";
       let totalGastado = 0;
-
       gastos.forEach((g, index) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${g.concepto}</td>
           <td>$${g.monto.toFixed(2)}</td>
           <td>${g.fecha}</td>
-          <td>
-            <button class="btn btn-eliminar" onclick="eliminarGasto(${index})">❌ Eliminar</button>
-          </td>
+          <td><button class="btn btn-eliminar" onclick="eliminarGasto(${index})">❌ Eliminar</button></td>
         `;
         listaGastos.appendChild(fila);
         totalGastado += g.monto;
       });
-
       totalGastadoEl.textContent = `$${totalGastado.toFixed(2)}`;
-
-      // Actualizar Ganancia también al cambiar gastos
+      // también actualizar ganancia cuando cambian gastos
       renderPedidos();
     }
 
@@ -344,32 +330,45 @@
       renderGastos();
     }
 
-    // Descargar Excel Pedidos
-    function descargarExcelPedidos() {
-      let csv = "Cliente,Producto,Cantidad,Total,Observaciones,Fecha,Estado\n";
-      pedidos.forEach(p => {
-        csv += `${p.cliente},${p.producto},${p.cantidad},${(p.precio*p.cantidad).toFixed(2)},${p.observaciones},${p.fecha},${p.pagado ? "Pagado":"Pendiente"}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.setAttribute("href", url);
-      a.setAttribute("download", "pedidos.csv");
-      a.click();
-    }
+    // Función para descargar TODO (pedidos y gastos) como .xlsx
+    function descargarTodoExcel() {
+      // Crear un libro de Excel
+      const wb = XLSX.utils.book_new();
 
-    // Descargar Excel Gastos
-    function descargarExcelGastos() {
-      let csv = "Concepto,Monto,Fecha\n";
-      gastos.forEach(g => {
-        csv += `${g.concepto},${g.monto.toFixed(2)},${g.fecha}\n`;
+      // Armar hoja de pedidos
+      const pedidosData = [
+        ["Cliente","Producto","Cantidad","Total","Observaciones","Fecha","Estado"]
+      ];
+      pedidos.forEach(p => {
+        pedidosData.push([
+          p.cliente,
+          p.producto,
+          p.cantidad,
+          (p.precio * p.cantidad).toFixed(2),
+          p.observaciones,
+          p.fecha,
+          p.pagado ? "Pagado" : "Pendiente"
+        ]);
       });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.setAttribute("href", url);
-      a.setAttribute("download", "gastos.csv");
-      a.click();
+      const wsPedidos = XLSX.utils.aoa_to_sheet(pedidosData);
+      XLSX.utils.book_append_sheet(wb, wsPedidos, "Pedidos");
+
+      // Armar hoja de gastos
+      const gastosData = [
+        ["Concepto","Monto","Fecha"]
+      ];
+      gastos.forEach(g => {
+        gastosData.push([
+          g.concepto,
+          g.monto.toFixed(2),
+          g.fecha
+        ]);
+      });
+      const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
+      XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
+
+      // Descargar
+      XLSX.writeFile(wb, "Pedidos_Y_Gastos.xlsx", { bookType: "xlsx", type: "binary" });
     }
 
     // Inicializar
