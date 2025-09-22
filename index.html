@@ -243,7 +243,7 @@
           </td>
         `;
         lista.appendChild(fila);
-        if (p.pagado) totalIngresos += p.precio * p.cantidad;
+        totalIngresos += p.precio * p.cantidad;
       });
       totalIngresosEl.textContent = `$${totalIngresos.toFixed(2)}`;
 
@@ -335,7 +335,7 @@
           (p.precio * p.cantidad).toFixed(2),
           p.observaciones,
           p.fecha,
-          p.pagado ? "Listo" : "Pendiente"
+          p.pagado ? "Listo" : ""
         ]);
       });
       const wsPedidos = XLSX.utils.aoa_to_sheet(pedidosData);
