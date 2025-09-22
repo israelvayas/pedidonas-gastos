@@ -1,358 +1,210 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Caja de Pedidos y Gastos</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #222;
-      color: #fff;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #00e676;
-    }
-    nav {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    nav button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      background: #00e676;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    nav button:hover {
-      transform: scale(1.05);
-      background: #1de9b6;
-    }
-    .section {
-      display: none;
-    }
-    .active {
-      display: block;
-    }
-    .totales {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-    .totales div {
-      padding: 10px 20px;
-      border-radius: 10px;
-      background: #333;
-      box-shadow: 0px 2px 8px rgba(0,0,0,0.6);
-    }
-    form {
-      background: #333;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.5);
-      margin-bottom: 20px;
-    }
-    form input, form textarea, form button {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
-    }
-    form input, form textarea {
-      background: #444;
-      color: #fff;
-    }
-    form button {
-      background: #00e676;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    form button:hover {
-      transform: scale(1.05);
-      background: #1de9b6;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #333;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0px 2px 8px rgba(0,0,0,0.5);
-    }
-    table th, table td {
-      padding: 12px;
-      border-bottom: 1px solid #444;
-      text-align: center;
-    }
-    table th {
-      background: #00e676;
-      color: #000;
-    }
-    .pagado {
-      opacity: 0.5;
-    }
-    .acciones button {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.2s;
-    }
-    .acciones button:hover {
-      transform: scale(1.1);
-    }
-    .btn-listo {
-      background: #ffc107;
-      color: #000;
-    }
-    .btn-listo:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-    }
-    .btn-eliminar {
-      background: #ff5252;
-      color: #fff;
-    }
-    .descargar-btn {
-      background: #1e88e5;
-      color: #fff;
-      margin-bottom: 15px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Balance General</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  --bg: #f8f9fa; --card: #fff; --text:#212529;
+  --primary:#6c5ce7; --success:#00b894; --danger:#d63031;
+}
+body.dark { --bg:#181a1b; --card:#242526; --text:#e4e6eb; }
+body {font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0;}
+header{background:var(--primary); color:#fff; padding:1rem; text-align:center; position:relative; font-size:1.5rem;}
+header button{position:absolute; right:1rem; top:1rem; padding:.3rem .6rem; border:none; border-radius:5px; background:#fff; color:var(--primary); cursor:pointer;}
+.container{max-width:1000px;margin:auto;padding:1rem;}
+.tabs{display:flex; justify-content:center; margin-bottom:1rem; gap:.5rem; flex-wrap:wrap;}
+.tabs button{padding:.5rem 1rem; border:none;border-radius:5px; cursor:pointer;background:var(--primary);color:#fff; font-weight:bold;}
+.section{display:none;}
+.section.active{display:block;}
+form{background:var(--card); padding:1rem; border-radius:10px; margin-bottom:1rem; display:flex; gap:.5rem; flex-wrap:wrap; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+form input, form button{padding:.5rem; border-radius:5px; border:1px solid #ccc; font-size:1rem;}
+table{width:100%; border-collapse:collapse; background:var(--card); margin-top:1rem; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+th, td{border:1px solid #eee; padding:.5rem; text-align:center;}
+tr.pagado{opacity:0.5;}
+.totales, .balance{display:flex; gap:1rem; margin:1rem 0; flex-wrap:wrap;}
+.card{flex:1; padding:1rem; border-radius:10px; background:var(--card); text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.success{color:var(--success);}
+.danger{color:var(--danger);}
+.info{color:var(--primary);}
+.search-box{margin:.5rem 0; text-align:right;}
+.search-box input{padding:.4rem; border-radius:5px; border:1px solid #ccc;}
+button.btn{padding:.4rem .7rem; margin:0 2px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;}
+.btn-listo{background:var(--success); color:#fff;}
+.btn-eliminar{background:var(--danger); color:#fff;}
+</style>
 </head>
 <body>
-  <h1>📦 Caja de Pedidos y Gastos</h1>
+<header>Balance General<button onclick="toggleDarkMode()">🌙/☀️</button></header>
+<div class="container">
+<div class="tabs">
+<button onclick="mostrar('pedidos')">Pedidos</button>
+<button onclick="mostrar('gastos')">Gastos</button>
+<button onclick="mostrar('balance')">Balance</button>
+</div>
 
-  <nav>
-    <button onclick="mostrarSeccion('pedidos')">➕ Ingresar Pedido</button>
-    <button onclick="mostrarSeccion('verPedidos')">📋 Ver Pedidos</button>
-    <button onclick="mostrarSeccion('gastos')">💲 Gastos</button>
-  </nav>
+<!-- Pedidos -->
+<div id="pedidos" class="section active">
+<form id="pedidoForm">
+<input type="text" id="cliente" placeholder="Cliente" required>
+<input type="text" id="producto" placeholder="Producto" required>
+<input type="number" id="cantidad" placeholder="Cantidad" min="1" required>
+<input type="number" id="precio" placeholder="Precio" min="0" step="0.01" required>
+<button type="submit">➕ Agregar</button>
+</form>
+<div class="totales"><div class="card success">Ingresos: $<span id="totalIngresos">0</span></div></div>
+<div class="search-box"><input type="text" id="searchPedidos" placeholder="Buscar pedido..."></div>
+<table>
+<thead><tr><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Total</th><th>Fecha</th><th>Acciones</th></tr></thead>
+<tbody id="listaPedidos"></tbody>
+</table>
+</div>
 
-  <!-- Sección Pedidos -->
-  <div id="pedidos" class="section active">
-    <form id="pedidoForm">
-      <input type="text" id="cliente" placeholder="Nombre del cliente" required>
-      <input type="text" id="producto" placeholder="Producto" required>
-      <input type="number" id="cantidad" placeholder="Cantidad" min="1" required>
-      <input type="number" id="precio" placeholder="Precio de venta" min="0" step="0.01" required>
-      <textarea id="observaciones" placeholder="Observaciones"></textarea>
-      <button type="submit">➕ Agregar Pedido</button>
-    </form>
-  </div>
+<!-- Gastos -->
+<div id="gastos" class="section">
+<form id="gastoForm">
+<input type="text" id="concepto" placeholder="Concepto" required>
+<input type="number" id="monto" placeholder="Monto" min="0" step="0.01" required>
+<button type="submit">➕ Agregar</button>
+</form>
+<div class="totales"><div class="card danger">Gastos: $<span id="totalGastado">0</span></div></div>
+<div class="search-box"><input type="text" id="searchGastos" placeholder="Buscar gasto..."></div>
+<table>
+<thead><tr><th>Concepto</th><th>Monto</th><th>Fecha</th><th>Acciones</th></tr></thead>
+<tbody id="listaGastos"></tbody>
+</table>
+</div>
 
-  <!-- Sección Ver Pedidos -->
-  <div id="verPedidos" class="section">
-    <div class="totales">
-      <div>💰 Ingresos: <span id="totalIngresos">0</span></div>
-      <div>💸 Gastos: <span id="totalGastado2">0</span></div>
-      <div>🤑 Ganancia: <span id="ganancia">0</span></div>
-    </div>
-    <button class="btn descargar-btn" onclick="descargarTodoExcel()">⬇ Descargar Pedidos y Gastos</button>
-    <table>
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Producto</th>
-          <th>Cantidad</th>
-          <th>Total</th>
-          <th>Observaciones</th>
-          <th>Fecha</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="listaPedidos"></tbody>
-    </table>
-  </div>
+<!-- Balance -->
+<div id="balance" class="section">
+<div class="balance">
+<div class="card success">Total Ingresos: $<span id="balanceIngresos">0</span></div>
+<div class="card danger">Total Gastos: $<span id="balanceGastos">0</span></div>
+<div class="card info">Ganancia/Pérdida: $<span id="balanceResultado">0</span></div>
+</div>
+<div class="totales">
+<button onclick="exportarExcel()">⬇ Exportar Excel</button>
+<button onclick="exportarPDF()">⬇ Exportar PDF</button>
+</div>
+</div>
 
-  <!-- Sección Gastos -->
-  <div id="gastos" class="section">
-    <form id="gastoForm">
-      <input type="text" id="concepto" placeholder="Concepto del gasto" required>
-      <input type="number" id="monto" placeholder="Monto" min="0" step="0.01" required>
-      <button type="submit">➕ Agregar Gasto</button>
-    </form>
+<script>
+let pedidos=JSON.parse(localStorage.getItem("pedidos"))||[];
+let gastos=JSON.parse(localStorage.getItem("gastos"))||[];
 
-    <div class="totales">
-      <div>💲 Total Gastado: <span id="totalGastado">0</span></div>
-    </div>
+function mostrar(id){
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+if(id==="balance") actualizarBalance();
+}
+function toggleDarkMode(){ document.body.classList.toggle("dark"); }
 
-    <table>
-      <thead>
-        <tr>
-          <th>Concepto</th>
-          <th>Monto</th>
-          <th>Fecha</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="listaGastos"></tbody>
-    </table>
-  </div>
+// Pedidos
+function renderPedidos(){
+listaPedidos.innerHTML="";
+let total=0;
+pedidos.forEach((p,i)=>{
+total+=p.cantidad*p.precio;
+let clase=p.listo?"class='pagado'":"";
+listaPedidos.innerHTML+=`<tr ${clase}>
+<td>${p.cliente}</td>
+<td>${p.producto}</td>
+<td>${p.cantidad}</td>
+<td>$${(p.cantidad*p.precio).toFixed(2)}</td>
+<td>${p.fecha}</td>
+<td>
+<button class="btn btn-listo" onclick="toggleListo(${i})">
+${p.listo ? "✔ Hecho" : "✔ Listo"}
+</button>
+<button class="btn btn-eliminar" onclick="eliminarPedido(${i})">🗑</button>
+</td>
+</tr>`;
+});
+totalIngresos.textContent=total.toFixed(2);
+}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+function toggleListo(i){
+pedidos[i].listo = !pedidos[i].listo; // alterna true/false
+localStorage.setItem("pedidos", JSON.stringify(pedidos));
+renderPedidos();
+}
 
-  <script>
-    function mostrarSeccion(id) {
-      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+function eliminarPedido(i){ pedidos.splice(i,1); localStorage.setItem("pedidos",JSON.stringify(pedidos)); renderPedidos(); }
 
-    const form = document.getElementById("pedidoForm");
-    const lista = document.getElementById("listaPedidos");
-    const totalIngresosEl = document.getElementById("totalIngresos");
-    const totalGastadoEl2 = document.getElementById("totalGastado2");
-    const gananciaEl = document.getElementById("ganancia");
+document.getElementById("pedidoForm").addEventListener("submit",e=>{
+e.preventDefault();
+let pedido={cliente:cliente.value,producto:producto.value,cantidad:+cantidad.value,precio:+precio.value,fecha:new Date().toLocaleDateString(),listo:false};
+pedidos.push(pedido);
+localStorage.setItem("pedidos",JSON.stringify(pedidos));
+e.target.reset();
+renderPedidos();
+});
 
-    const gastoForm = document.getElementById("gastoForm");
-    const listaGastos = document.getElementById("listaGastos");
-    const totalGastadoEl = document.getElementById("totalGastado");
+// Gastos
+function renderGastos(){
+listaGastos.innerHTML="";
+let total=0;
+gastos.forEach((g,i)=>{
+total+=g.monto;
+listaGastos.innerHTML+=`<tr>
+<td>${g.concepto}</td><td>$${g.monto.toFixed(2)}</td><td>${g.fecha}</td>
+<td><button class="btn btn-eliminar" onclick="eliminarGasto(${i})">🗑</button></td>
+</tr>`;
+});
+totalGastado.textContent=total.toFixed(2);
+}
 
-    let pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
-    let gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+function eliminarGasto(i){ gastos.splice(i,1); localStorage.setItem("gastos",JSON.stringify(gastos)); renderGastos(); }
 
-    function renderPedidos() {
-      lista.innerHTML = "";
-      let totalIngresos = 0;
-      pedidos.forEach((p, index) => {
-        const fila = document.createElement("tr");
-        if (p.pagado) fila.classList.add("pagado");
-        fila.innerHTML = `
-          <td>${p.cliente}</td>
-          <td>${p.producto}</td>
-          <td>${p.cantidad}</td>
-          <td>$${(p.precio * p.cantidad).toFixed(2)}</td>
-          <td>${p.observaciones}</td>
-          <td>${p.fecha}</td>
-          <td class="acciones">
-            <button class="btn btn-listo" onclick="marcarListo(${index})" ${p.pagado ? "disabled" : ""}>✅ Listo</button>
-            <button class="btn btn-eliminar" onclick="eliminarPedido(${index})">❌ Eliminar</button>
-          </td>
-        `;
-        lista.appendChild(fila);
-        totalIngresos += p.precio * p.cantidad;
-      });
-      totalIngresosEl.textContent = `$${totalIngresos.toFixed(2)}`;
+document.getElementById("gastoForm").addEventListener("submit",e=>{
+e.preventDefault();
+let gasto={concepto:concepto.value,monto:+monto.value,fecha:new Date().toLocaleDateString()};
+gastos.push(gasto);
+localStorage.setItem("gastos",JSON.stringify(gastos));
+e.target.reset();
+renderGastos();
+});
 
-      const totalGastado = gastos.reduce((sum, g) => sum + g.monto, 0);
-      totalGastadoEl2.textContent = `$${totalGastado.toFixed(2)}`;
+// Buscadores
+searchPedidos.addEventListener("keyup",()=>{let val=searchPedidos.value.toLowerCase();Array.from(listaPedidos.children).forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(val)?"":"none");});
+searchGastos.addEventListener("keyup",()=>{let val=searchGastos.value.toLowerCase();Array.from(listaGastos.children).forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(val)?"":"none");});
 
-      const ganancia = totalIngresos - totalGastado;
-      gananciaEl.textContent = `$${ganancia.toFixed(2)}`;
-    }
+// Balance
+function actualizarBalance(){
+let totalIngresosNum=pedidos.reduce((a,p)=>a+p.cantidad*p.precio,0);
+let totalGastosNum=gastos.reduce((a,g)=>a+g.monto,0);
+balanceIngresos.textContent=totalIngresosNum.toFixed(2);
+balanceGastos.textContent=totalGastosNum.toFixed(2);
+balanceResultado.textContent=(totalIngresosNum-totalGastosNum).toFixed(2);
+}
 
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const nuevoPedido = {
-        cliente: document.getElementById("cliente").value,
-        producto: document.getElementById("producto").value,
-        cantidad: parseInt(document.getElementById("cantidad").value),
-        precio: parseFloat(document.getElementById("precio").value),
-        observaciones: document.getElementById("observaciones").value,
-        fecha: new Date().toLocaleString(),
-        pagado: false
-      };
-      pedidos.push(nuevoPedido);
-      localStorage.setItem("pedidos", JSON.stringify(pedidos));
-      renderPedidos();
-      form.reset();
-      mostrarSeccion("verPedidos");
-    });
+// Export Excel
+function exportarExcel(){
+let wb=XLSX.utils.book_new();
+let ws1=XLSX.utils.json_to_sheet(pedidos);
+let ws2=XLSX.utils.json_to_sheet(gastos);
+XLSX.utils.book_append_sheet(wb,ws1,"Pedidos");
+XLSX.utils.book_append_sheet(wb,ws2,"Gastos");
+XLSX.writeFile(wb,"balance.xlsx");
+}
 
-    function marcarListo(index) {
-      pedidos[index].pagado = true;
-      localStorage.setItem("pedidos", JSON.stringify(pedidos));
-      renderPedidos();
-    }
+// Export PDF
+function exportarPDF(){
+const { jsPDF } = window.jspdf;
+let doc=new jsPDF();
+doc.text("Balance General",14,20);
+doc.autoTable({head:[["Cliente","Producto","Cantidad","Precio","Fecha"]],body:pedidos.map(p=>[p.cliente,p.producto,p.cantidad,p.precio,p.fecha]),startY:30});
+doc.autoTable({head:[["Concepto","Monto","Fecha"]],body:gastos.map(g=>[g.concepto,g.monto,g.fecha]),startY:doc.lastAutoTable.finalY+10});
+doc.text(`Ganancia/Pérdida: $${(pedidos.reduce((a,p)=>a+p.cantidad*p.precio,0)-gastos.reduce((a,g)=>a+g.monto,0)).toFixed(2)}`,14,doc.lastAutoTable.finalY+25);
+doc.save("balance.pdf");
+}
 
-    function eliminarPedido(index) {
-      pedidos.splice(index, 1);
-      localStorage.setItem("pedidos", JSON.stringify(pedidos));
-      renderPedidos();
-    }
-
-    function renderGastos() {
-      listaGastos.innerHTML = "";
-      let totalGastado = 0;
-      gastos.forEach((g, index) => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${g.concepto}</td>
-          <td>$${g.monto.toFixed(2)}</td>
-          <td>${g.fecha}</td>
-          <td><button class="btn btn-eliminar" onclick="eliminarGasto(${index})">❌ Eliminar</button></td>
-        `;
-        listaGastos.appendChild(fila);
-        totalGastado += g.monto;
-      });
-      totalGastadoEl.textContent = `$${totalGastado.toFixed(2)}`;
-      renderPedidos();
-    }
-
-    gastoForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const nuevoGasto = {
-        concepto: document.getElementById("concepto").value,
-        monto: parseFloat(document.getElementById("monto").value),
-        fecha: new Date().toLocaleString()
-      };
-      gastos.push(nuevoGasto);
-      localStorage.setItem("gastos", JSON.stringify(gastos));
-      renderGastos();
-      gastoForm.reset();
-    });
-
-    function eliminarGasto(index) {
-      gastos.splice(index, 1);
-      localStorage.setItem("gastos", JSON.stringify(gastos));
-      renderGastos();
-    }
-
-    function descargarTodoExcel() {
-      const wb = XLSX.utils.book_new();
-
-      const pedidosData = [
-        ["Cliente","Producto","Cantidad","Total","Observaciones","Fecha","Estado"]
-      ];
-      pedidos.forEach(p => {
-        pedidosData.push([
-          p.cliente,
-          p.producto,
-          p.cantidad,
-          (p.precio * p.cantidad).toFixed(2),
-          p.observaciones,
-          p.fecha,
-          p.pagado ? "Listo" : ""
-        ]);
-      });
-      const wsPedidos = XLSX.utils.aoa_to_sheet(pedidosData);
-      XLSX.utils.book_append_sheet(wb, wsPedidos, "Pedidos");
-
-      const gastosData = [["Concepto","Monto","Fecha"]];
-      gastos.forEach(g => {
-        gastosData.push([g.concepto, g.monto.toFixed(2), g.fecha]);
-      });
-      const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
-      XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
-
-      XLSX.writeFile(wb, "Pedidos_Y_Gastos.xlsx", { bookType: "xlsx", type: "binary" });
-    }
-
-    renderPedidos();
-    renderGastos();
-  </script>
+// Inicializar
+renderPedidos();
+renderGastos();
+</script>
 </body>
 </html>
